@@ -1,0 +1,11 @@
+_format_version: "3.0"
+
+services:
+  - name: cmdb-api
+    url: https://api.dev.cmdb-api.cloud-automation.nonp.cloud-automation.c1.tpgtelecom.com.au
+
+    routes:
+      - name: cmdb-api-route
+        paths:
+          - /
+        strip_path: false
