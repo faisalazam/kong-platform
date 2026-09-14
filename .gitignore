@@ -1,0 +1,8 @@
+# IntelliJ
+.idea
+/out
+
+# Mac OS
+.DS_Store
+
+kong/generated/
