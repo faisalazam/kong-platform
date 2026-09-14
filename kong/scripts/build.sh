@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-kong_image="kong:3.9"
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 kong_dir="$(cd "$script_dir/.." && pwd)"
 generated_file="$kong_dir/generated/kong.yml"
@@ -51,10 +50,27 @@ fi
 
 echo "INFO: Validating generated configuration..."
 
-docker run --rm \
-  -e KONG_DATABASE=off \
-  -v "$kong_dir/generated:/kong" \
-  "$kong_image" \
-  kong config parse /kong/kong.yml
+# Preferred validation approach for database-backed Kong deployments.
+#
+# The generated manifest is synchronized into Kong using:
+#   deck gateway sync
+#
+# which mirrors the production deployment flow:
+#   generated kong.yml → decK validate → decK sync → Kong + PostgreSQL
+deck gateway validate "$generated_file"
+
+# Alternative validation approach for DB-less Kong deployments.
+#
+# In DB-less mode Kong loads the declarative configuration directly via: KONG_DECLARATIVE_CONFIG
+#
+# In that scenario validating with the Kong runtime itself is often
+# preferable because Kong is the component directly consuming the file.
+#
+#kong_image="kong:3.9"
+#docker run --rm \
+#  -e KONG_DATABASE=off \
+#  -v "$kong_dir/generated:/kong" \
+#  "$kong_image" \
+#  kong config parse /kong/kong.yml
 
 echo "SUCCESS: Kong configuration is valid"
