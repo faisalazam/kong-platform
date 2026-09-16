@@ -1,0 +1,51 @@
+_format_version: "3.0"
+
+# PoC note:
+#
+# Demonstrates direct Kong → Lambda invocation using the aws-lambda plugin.
+#
+# Validate via:
+#   curl -i 'http://localhost:8000/poc/lambda/directory/ad/groups?domain=TPGT'
+#
+# Unlike directory-api.yml, this bypasses API Gateway entirely.
+services:
+  - enabled: true
+
+    name: ${{ env "DECK_DIRECTORY_API_NAME" }}-lambda
+
+    # Dummy upstream.
+    # The aws-lambda plugin performs the invocation.
+    url: http://localhost:65535
+
+    routes:
+      - name: ${{ env "DECK_DIRECTORY_API_NAME" }}-lambda-route
+
+        paths:
+          - /poc/lambda/directory
+
+        methods:
+          - GET
+
+        # Remove the PoC-specific route prefix before invoking Lambda.
+        # e.g. /poc/lambda/directory/ad/groups -> /ad/groups
+        strip_path: true
+
+    plugins:
+      - name: aws-lambda
+
+        enabled: true
+
+        config:
+          aws_region: ap-southeast-2
+          awsgateway_compatible: true
+          function_name: ${{ env "DECK_DIRECTORY_LAMBDA_ARN" }}
+
+          log_type: None
+          invocation_type: RequestResponse
+
+          is_proxy_integration: true
+
+          forward_request_uri: true
+          forward_request_body: true
+          forward_request_method: true
+          forward_request_headers: true
