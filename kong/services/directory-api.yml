@@ -2,13 +2,13 @@ _format_version: "3.0"
 
 # PoC note:
 #
-# The CMDB API Gateway is protected by resource policies and is not
+# The Directory API Gateway is protected by resource policies and is not
 # publicly callable by default.
 #
-# To test Kong → API Gateway routing for the `/account_category` resource:
+# To test Kong → API Gateway routing for the `/ad/groups` resource:
 #
 # 1. Add a temporary API Gateway resource policy allowing:
-#      GET /account_category
+#      GET /ad/*
 #
 #    Example:
 #    {
@@ -17,7 +17,7 @@ _format_version: "3.0"
 #        "AWS": "arn:aws:iam::179857410264:root"
 #      },
 #      "Action": "execute-api:Invoke",
-#      "Resource": "arn:aws:execute-api:ap-southeast-2:179857410264:*/api/GET/*",
+#      "Resource": "arn:aws:execute-api:ap-southeast-2:179857410264:*/api/GET/ad/*",
 #      "Condition": {
 #        "StringLike": {
 #          "aws:PrincipalArn": "arn:aws:sts::179857410264:assumed-role/TPGT-PowerUser/*"
@@ -28,7 +28,7 @@ _format_version: "3.0"
 #      "Effect": "Allow",
 #      "Principal": "*",
 #      "Action": "execute-api:Invoke",
-#      "Resource": "arn:aws:execute-api:ap-southeast-2:179857410264:*/api/GET/account_category"
+#      "Resource": "arn:aws:execute-api:ap-southeast-2:179857410264:*/api/GET/ad/*"
 #    }
 #
 # 2. Set Method Authorization = NONE for the relevant API Gateway method.
@@ -36,19 +36,19 @@ _format_version: "3.0"
 # 3. Redeploy the API Gateway stage.
 #
 # 4. Validate end-to-end connectivity through Kong:
-#    curl -i 'http://localhost:8000/poc/api-gateway/cmdb/account_category'
+#    curl -i 'http://localhost:8000/poc/api-gateway/directory/ad/groups?domain=TPGT'
 #
 # This configuration demonstrates:
-#   Kong → API Gateway → CMDB API Lambda
+#   Kong → API Gateway → Directory API Lambda
 services:
-  - name: ${{ env "DECK_CMDB_API_NAME" }}
-    url: https://api.${{ env "DECK_API_ENV" }}.${{ env "DECK_CMDB_API_NAME" }}.${{ env "DECK_API_BASE_DOMAIN" }}
+  - name: ${{ env "DECK_DIRECTORY_API_NAME" }}
+    url: https://api.${{ env "DECK_API_ENV" }}.${{ env "DECK_DIRECTORY_API_NAME" }}.${{ env "DECK_API_BASE_DOMAIN" }}
 
     routes:
-      - name: ${{ env "DECK_CMDB_API_NAME" }}-route
+      - name: ${{ env "DECK_DIRECTORY_API_NAME" }}-route
         paths:
-          - /poc/api-gateway/cmdb
+          - /poc/api-gateway/directory
 
         # Remove the PoC-specific route prefix before invoking api-gateway.
-        # e.g. /poc/api-gateway/cmdb/account_category -> /account_category
+        # e.g. /poc/api-gateway/directory/ad/groups -> /ad/groups
         strip_path: true

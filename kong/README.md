@@ -20,11 +20,11 @@ Production Kong is database-backed and managed using decK.
 kong
 ├── docker-compose.yml
 ├── services
-│   └── cmdb-api.yml
+│   ├── cmdb-api.yml       # Kong -> API Gateway
+│   └── directory-api.yml  # Kong -> API Gateway
 ├── plugins
 ├── scripts
-│   ├── build.sh
-│   └── deploy.sh
+│   └── run.sh
 └── README.md
 ```
 
@@ -101,12 +101,13 @@ Successful output:
 
 ```text
 INFO: Kong directory: ...
-
-SUCCESS: Generated ...
-
-INFO: Validating generated configuration...
-
+INFO: Environment: local
+INFO: Loading environment variables
+INFO: Validating Kong configuration
 SUCCESS: Kong configuration is valid
+INFO: Synchronizing Kong configuration
+...
+SUCCESS: Kong configuration synchronized
 ```
 
 ---
@@ -216,3 +217,26 @@ curl http://localhost:8000/<route>
 - The generated `generated/kong.yml` file is an implementation artifact and should not be edited manually.
 - decK is used to synchronize configuration into Kong.
 - Local development mirrors the production Kong architecture as closely as possible.
+
+
+_format_version: "3.0"
+
+## PoC note:
+
+The upstream API Gateway is protected by resource policies and is not
+publicly callable by default.
+
+To test Kong → API Gateway routing, resource policies may need to be
+temporarily updated to allow invocation of specific API resources.
+
+Depending on the target API:
+  - Method Authorization may need to be set to NONE
+  - API Gateway resource policies may need to allow the required paths
+  - The API must be redeployed after applying policy changes
+
+Example endpoints used during development:
+  - GET /ad/groups (directory-api)
+  - GET /account_category (cmdb-api)
+
+Policy requirements are API-specific and should be tailored to the
+resources being exposed through Kong.
