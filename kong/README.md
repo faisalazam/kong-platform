@@ -63,11 +63,27 @@ brew install kong/deck/deck
 
 ## Start Kong
 
+Login to AWS:
+
+```bash
+aws login --profile cloud-automation-dev
+```
+
+Export AWS Credentials:
+
+```bash
+eval "$(aws configure export-credentials \
+    --profile cloud-automation-dev \
+    --format env)"
+```
+
 Start PostgreSQL and Kong:
 
 ```bash
 docker compose up -d
 ```
+
+Don't forget to recreate the `kong` container after exporting the AWS credentials when credentials expire. 
 
 ---
 
