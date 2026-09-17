@@ -1,8 +1,15 @@
-# AWS Onboarding API CMDB - Kong POC
+# AWS Onboarding APIs - Kong POC
 
 ## Overview
 
-A local Kong proof of concept for evaluating the migration of CMDB APIs away from API Gateway.
+A local Kong proof of concept for evaluating AWS Onboarding API integration patterns and migration options.
+
+The PoC evaluates two architectures:
+
+- Kong → API Gateway → Lambda
+- Kong → Lambda
+
+using the CMDB and Directory APIs.
 
 The local Kong environment is intentionally configured to mirror the production architecture:
 
@@ -14,36 +21,57 @@ Production Kong is database-backed and managed using decK.
 
 ---
 
+## POC Architectures Evaluated
+
+### Kong → API Gateway → Lambda
+
+Used by:
+
+1. services/cmdb-api.yml
+2. services/directory-api.yml
+
+### Kong → AWS Lambda
+
+Used by:
+
+1. services/cmdb-lambda.yml
+2. services/directory-lambda.yml
+
+The direct Lambda approach uses Kong's aws-lambda plugin and bypasses API Gateway entirely.
+
+---
+
 ## Directory Structure
 
 ```text
 kong
+├── .config
+│   ├── local.deck.yml
+│   └── local.env
 ├── docker-compose.yml
-├── services
-│   ├── cmdb-api.yml       # Kong -> API Gateway
-│   └── directory-api.yml  # Kong -> API Gateway
-├── plugins
+├── README.md
 ├── scripts
-│   └── run.sh
-└── README.md
+│   ├── sync-kong.sh
+│   └── start-kong.sh
+└── services
+    ├── cmdb-api.yml         # Kong -> API Gateway
+    ├── cmdb-lambda.yml      # Kong -> Lambda
+    ├── directory-api.yml    # Kong -> API Gateway
+    └── directory-lambda.yml # Kong -> Lambda
 ```
 
 ### Source of Truth
 
-Configuration is maintained in:
+Kong configuration is maintained as code.
 
 ```text
-services/*.yml
-plugins/*.yml
+.config/
+services/
 ```
 
-### Generated Artifact
-
-Generates an `services/.generated/empty_kong.yml` only if `services` folder is empty so that kong can start up fine:
-
-```bash
-./scripts/build.sh
-```
+- .config/local.env contains environment-specific variables.
+- .config/local.deck.yml contains decK configuration.
+- services/*.yml contains Kong services, routes and plugins.
 
 ---
 
@@ -69,21 +97,15 @@ Login to AWS:
 aws login --profile cloud-automation-dev
 ```
 
-Export AWS Credentials:
+Start kong:
 
 ```bash
-eval "$(aws configure export-credentials \
-    --profile cloud-automation-dev \
-    --format env)"
+./scripts/start-kong.sh
 ```
 
-Start PostgreSQL and Kong:
+`start-kong.sh` exports AWS credentials and recreates the Kong container.
 
-```bash
-docker compose up -d
-```
-
-Don't forget to recreate the `kong` container after exporting the AWS credentials when credentials expire. 
+Run it again whenever the AWS session expires.
 
 ---
 
@@ -105,12 +127,12 @@ For Kong admin GUI, navigate to http://localhost:8002
 
 ---
 
-## Build Configuration
+## Validate and Synchronize Configuration
 
-Generate and validate the Kong manifest:
+Validates and synchronizes configuration into Kong:
 
 ```bash
-./scripts/build.sh
+./scripts/sync-kong.sh
 ```
 
 Successful output:
@@ -126,23 +148,16 @@ INFO: Synchronizing Kong configuration
 SUCCESS: Kong configuration synchronized
 ```
 
----
+### Empty Configuration Handling
 
-## Synchronize Configuration
+If no service definitions exist under:
 
-Build and synchronize configuration into Kong:
-
-```bash
-./scripts/deploy.sh
+```text
+services/
 ```
 
-Equivalent manual command:
-
-```bash
-deck gateway sync \
-  --kong-addr http://localhost:8001 \
-  generated/kong.yml
-```
+`sync-kong.sh` automatically generates: `services/.generated/empty_kong.yml`. This allows decK validation and Kong startup to
+succeed even when no service definitions are present.
 
 ---
 
@@ -159,18 +174,42 @@ Preview planned changes without applying them:
 
 ```bash
 deck gateway diff \
-  --kong-addr http://localhost:8001 \
-  generated/kong.yml
+  --config .config/local.deck.yml \
+  services
 ```
 
 ---
 
-## Test Route
+## Validation Scenarios
 
-Current route:
+The following commands demonstrate both API Gateway-backed and direct Lambda-backed integrations.
+
+### Directory API via API Gateway
 
 ```bash
-curl http://localhost:8000/account_category
+# Kong → API Gateway → Directory API Lambda
+curl -i 'http://localhost:8000/poc/api-gateway/directory/ad/groups?domain=TPGT'
+```
+
+### Directory API via Direct Lambda Invocation
+
+```bash
+# Kong → Directory API Lambda
+curl -i 'http://localhost:8000/poc/lambda/directory/ad/groups?domain=TPGT'
+```
+
+### CMDB API via API Gateway
+
+```bash
+# Kong → API Gateway → CMDB API Lambda
+curl -i 'http://localhost:8000/poc/api-gateway/cmdb/account_category'
+```
+
+### CMDB API via Direct Lambda Invocation
+
+```bash
+# Kong → CMDB API Lambda
+curl -i 'http://localhost:8000/poc/lambda/cmdb/account_category'
 ```
 
 ---
@@ -207,52 +246,20 @@ curl http://localhost:8001/plugins
 services/
 ```
 
-2. Build and validate:
+2. Validate and Synchronize:
 
 ```bash
-./scripts/build.sh
+./scripts/sync-kong.sh
 ```
 
-3. Apply changes:
-
-```bash
-./scripts/deploy.sh
-```
-
-4. Test through Kong:
-
-```bash
-curl http://localhost:8000/<route>
-```
+3. Validate using one of the scenarios listed in the "Validation Scenarios" section.
 
 ---
 
 ## Notes
 
-- Kong configuration is managed as code.
-- The generated `generated/kong.yml` file is an implementation artifact and should not be edited manually.
-- decK is used to synchronize configuration into Kong.
-- Local development mirrors the production Kong architecture as closely as possible.
-
-
-_format_version: "3.0"
-
-## PoC note:
-
-The upstream API Gateway is protected by resource policies and is not
-publicly callable by default.
-
-To test Kong → API Gateway routing, resource policies may need to be
-temporarily updated to allow invocation of specific API resources.
-
-Depending on the target API:
-  - Method Authorization may need to be set to NONE
-  - API Gateway resource policies may need to allow the required paths
-  - The API must be redeployed after applying policy changes
-
-Example endpoints used during development:
-  - GET /ad/groups (directory-api)
-  - GET /account_category (cmdb-api)
-
-Policy requirements are API-specific and should be tailored to the
-resources being exposed through Kong.
+- Kong configuration is managed as code using decK.
+- Local Kong uses PostgreSQL, matching the production architecture.
+- API Gateway-backed services and direct Lambda-backed services can coexist within the same Kong instance.
+- API Gateway resource policy requirements are documented in the corresponding service definition files.
+- AWS credentials used by the aws-lambda plugin are exported when Kong starts via `./scripts/start-kong.sh`.
