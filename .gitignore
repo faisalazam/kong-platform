@@ -5,4 +5,4 @@
 # Mac OS
 .DS_Store
 
-kong/services/.generated/empty_kong.yml
+services/.generated/empty_kong.yml
