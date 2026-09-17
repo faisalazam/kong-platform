@@ -82,8 +82,6 @@ services:
       - "8001:8001" # Admin API
       - "8002:8002" # Kong Manager (Admin GUI)
 
-    restart: unless-stopped
-
     healthcheck:
       test: [ "CMD", "kong", "health" ]
       retries: 5
