@@ -1,0 +1,43 @@
+_format_version: "3.0"
+
+services:
+  - enabled: true
+
+    name: echo-path
+
+    url: http://localhost:65535
+
+    routes:
+      - name: echo-path-route
+
+        paths:
+          - /poc/echo-path
+
+        methods:
+          - GET
+
+        strip_path: true
+
+    plugins:
+      - name: aws-lambda
+
+        enabled: true
+
+        config:
+          function_name: echo-path
+
+          aws_region: ap-southeast-2
+
+          host: localstack
+          port: 4566
+
+          disable_https: true
+
+          awsgateway_compatible: true
+
+          invocation_type: RequestResponse
+
+          forward_request_uri: true
+          forward_request_method: true
+          forward_request_headers: true
+          forward_request_body: true

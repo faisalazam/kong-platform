@@ -1,0 +1,39 @@
+_format_version: "3.0"
+
+services:
+  - name: chalice-fixed
+
+    url: http://localhost:65535
+
+    routes:
+      - name: chalice-fixed-route
+
+        paths:
+          - /poc/chalice-fixed
+
+        methods:
+          - GET
+
+        strip_path: true
+
+    plugins:
+      - name: aws-lambda
+
+        config:
+          function_name: chalice-fixed
+
+          aws_region: ap-southeast-2
+
+          host: localstack
+          port: 4566
+
+          disable_https: true
+
+          awsgateway_compatible: true
+
+          invocation_type: RequestResponse
+
+          forward_request_uri: true
+          forward_request_method: true
+          forward_request_headers: true
+          forward_request_body: true
