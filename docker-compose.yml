@@ -1,5 +1,44 @@
 services:
 
+  localstack:
+    container_name: kong-aws-localstack
+    # NOTE:
+    # We are intentionally pinning LocalStack to version 4.14.0.
+    #
+    # Newer versions (2025+ / 2026.x) bundle Pro features and enforce license activation,
+    # which causes containers to fail to start without a valid auth token.
+    #
+    # Version 4.14.0 is the last stable OSS-only release that:
+    # - does NOT require Pro licensing
+    # - does NOT force license activation
+    # - provides main AWS services (CloudFormation, S3, etc.)
+    image: localstack/localstack:4.14.0
+    ports:
+      # LocalStack exposes AWS-compatible APIs (not a web UI)
+      # Use via AWS CLI, boto3, or health endpoint,
+      # such as: curl http://localhost:4566/_localstack/health
+      - "4566:4566"
+    environment:
+      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+      USE_SSL: 0
+      DEBUG: ${DEBUG:-0}
+      LOCALSTACK_SSL_NO_VERIFY: 1 # dev only
+      PERSISTENCE: ${PERSISTENCE:-0}
+      AWS_REGION: ${AWS_REGION}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+    volumes:
+      - "./tests:/etc/localstack/tests"
+      - "./localstack/data:/var/lib/localstack"
+      - "./localstack/init:/etc/localstack/init"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:4566/_localstack/health" ]
+      retries: 5
+      timeout: 5s
+      interval: 10s
+      start_period: 10s
+
   postgres:
     image: postgres:13
 
@@ -50,6 +89,9 @@ services:
     container_name: kong
 
     depends_on:
+      localstack:
+        condition: service_healthy
+
       postgres:
         condition: service_healthy
 
@@ -72,7 +114,7 @@ services:
       KONG_PROXY_ACCESS_LOG: /dev/stdout
       KONG_ADMIN_ACCESS_LOG: /dev/stdout
 
-      AWS_REGION: ap-southeast-2
+      AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}

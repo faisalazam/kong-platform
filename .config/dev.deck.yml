@@ -1,0 +1,3 @@
+---
+kong-addr: https://console.api.np.tpgt.cloud/admin/
+tls-skip-verify: true
