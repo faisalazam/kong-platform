@@ -5,4 +5,5 @@
 # Mac OS
 .DS_Store
 
+localstack/data/
 services/.generated/empty_kong.yml

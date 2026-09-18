@@ -105,10 +105,11 @@ aws login --profile cloud-automation-dev
 Start kong:
 
 ```bash
-./scripts/start-kong.sh
+make up
 ```
 
-`start-kong.sh` exports AWS credentials and recreates the Kong container.
+`init-kong.sh` exports AWS credentials and, when running against real AWS, recreates the Kong container so refreshed
+credentials are injected into the container environment.
 
 Run it again whenever the AWS session expires.
 
@@ -144,24 +145,25 @@ The synchronization process:
 4. Applies configuration changes to Kong
 
 ```bash
-./scripts/sync-kong.sh
+make sync
 
 #OR
 
-ENVIRONMENT=dev ./scripts/sync-kong.sh
+ENVIRONMENT=dev make sync
 ```
 
 Successful output:
 
 ```text
-INFO: Kong directory: ...
-INFO: Environment: local
-INFO: Loading environment variables
-INFO: Validating Kong configuration
-SUCCESS: Kong configuration is valid
-INFO: Synchronizing Kong configuration
+[INFO]  Kong directory: ...
+[INFO]  Environment: local
+[INFO]  Synchronization enabled: true
+[INFO]  Loading environment variables
+[INFO]  Validating Kong configuration
+[INFO]  SUCCESS: Kong configuration is valid
+[INFO]  Synchronizing Kong configuration
 ...
-SUCCESS: Kong configuration synchronized
+[INFO]  SUCCESS: Kong configuration synchronized
 ```
 
 ### Empty Configuration Handling
@@ -269,7 +271,7 @@ services/
 Changes should always be validated and synchronized using:
 
 ```bash
-./scripts/sync-kong.sh
+make sync
 ```
 
 ### Add or Update a Service
@@ -283,7 +285,7 @@ services/
 2. Validate and Synchronize:
 
 ```bash
-./scripts/sync-kong.sh
+make sync
 ```
 
 3. Validate using one of the scenarios listed in the "Validation Scenarios" section.
@@ -311,7 +313,8 @@ HTTP/1.1 500 Internal Server Error
 
 **Cause**
 
-The `aws-lambda` plugin requires valid AWS credentials to sign Lambda invocation requests. Once the AWS session expires, Kong can no longer invoke Lambda functions.
+The `aws-lambda` plugin requires valid AWS credentials to sign Lambda invocation requests. Once the AWS session expires,
+Kong can no longer invoke Lambda functions.
 
 **Resolution**
 
