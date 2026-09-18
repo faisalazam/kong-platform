@@ -78,3 +78,21 @@ if [ "${SYNC_CONFIG}" = "true" ]; then
 
   log "SUCCESS: Kong configuration synchronized"
 fi
+
+# TODO: Remove the below block and find a better solution instead of sleeping for 5 seconds
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+#
+#curl -s http://localhost:8001/routes | jq '.data | length'
+#
+#REGION="ap-southeast-2"
+#ENDPOINT="http://localhost:4566"
+#AUTOMATION_ACCOUNT_ID="179857410264"
+#AUTOMATION_ACCOUNT_ACCESS_KEY="test"
+#AWS_ACCESS_KEY_ID="${AUTOMATION_ACCOUNT_ID}" \
+#AWS_SECRET_ACCESS_KEY="${AUTOMATION_ACCOUNT_ACCESS_KEY}" \
+#aws \
+#  --region "${REGION}" \
+#  --endpoint-url "${ENDPOINT}" \
+#  lambda wait function-active-v2 --function-name echo-path
+sleep 5
+echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"

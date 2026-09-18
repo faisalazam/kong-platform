@@ -1,0 +1,49 @@
+---
+name: Run Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check if Docker Compose is available
+        run: docker compose version || { echo "docker compose is not installed or not in PATH"; exit 1; }
+
+      - name: Install godotenv
+        run: |
+          go install github.com/joho/godotenv/cmd/godotenv@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+
+      - name: Install decK
+        uses: kong/setup-deck@v1
+
+      - name: Check required tools
+        run: |
+          docker compose version
+          which godotenv
+          deck version
+          which aws
+
+      - name: Start stack
+        run: make up
+
+      - name: Run tests
+        run: make test
+
+      - name: Debug Running Containers
+        if: ${{ always() }}
+        run: docker ps -a
+
+      - name: Collect Docker container logs
+        if: ${{ always() }}
+        run: make ci-logs
+
+      - name: Clean up Docker containers and volumes
+        if: ${{ always() }}
+        run: make down
