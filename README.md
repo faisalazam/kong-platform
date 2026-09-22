@@ -26,21 +26,25 @@ The production Kong platform is database-backed and managed using decK.
 
 ---
 
+## Additional Documentation
+
+Further documentation is available in:
+
+- `tests/framework/README.md` - Reusable shell test framework
+- `tests/README.md` - Test architecture, scenarios, and execution
+- `localstack/README.md` - LocalStack architecture, Lambda provisioning, and troubleshooting
+
+---
+
 ## POC Architectures Evaluated
 
 ### Kong → API Gateway → Lambda
 
-Used by:
-
-1. services/cmdb-api.yml
-2. services/directory-api.yml
+Used by `services/*-api.yml`
 
 ### Kong → AWS Lambda
 
-Used by:
-
-1. services/cmdb-lambda.yml
-2. services/directory-lambda.yml
+Used by `services/*-lambda.yml`
 
 The direct Lambda approach uses Kong's aws-lambda plugin and bypasses API Gateway entirely.
 
@@ -50,19 +54,15 @@ The direct Lambda approach uses Kong's aws-lambda plugin and bypasses API Gatewa
 
 ```text
 .
-├── .config
-│   ├── local.deck.yml
-│   └── local.env
+├── .config/
+├── .github/
+├── localstack/
+├── scripts/
+├── services/
+├── tests/
 ├── docker-compose.yml
-├── README.md
-├── scripts
-│   ├── sync-kong.sh
-│   └── start-kong.sh
-└── services
-    ├── cmdb-api.yml         # Kong -> API Gateway
-    ├── cmdb-lambda.yml      # Kong -> Lambda
-    ├── directory-api.yml    # Kong -> API Gateway
-    └── directory-lambda.yml # Kong -> Lambda
+├── Makefile
+└── README.md
 ```
 
 ### Source of Truth
@@ -74,8 +74,8 @@ Kong configuration is maintained as code.
 services/
 ```
 
-- .config/local.env contains environment-specific variables.
-- .config/local.deck.yml contains decK configuration.
+- .config/*.env contains environment-specific variables.
+- .config/*.deck.yml contains decK configuration.
 - services/*.yml contains Kong services, routes and plugins.
 
 ---
@@ -96,19 +96,32 @@ brew install kong/deck/deck
 
 ## Start Kong
 
-Login to AWS:
+### Local Environment
 
-```bash
-aws login --profile cloud-automation-dev
-```
-
-Start kong:
+Start Kong and LocalStack:
 
 ```bash
 make up
 ```
 
-`init-kong.sh` exports AWS credentials and, when running against real AWS, recreates the Kong container so refreshed
+### AWS Based Environment
+
+Authenticate with AWS:
+
+```bash
+aws login --profile cloud-automation-dev
+```
+
+Start Kong using the desired AWS-backed environment:
+
+```bash
+ENVIRONMENT=<environment> make up
+
+# Example:
+ENVIRONMENT=dev make up
+```
+
+`make init` exports AWS credentials and, when running against real AWS, recreates the Kong container so refreshed
 credentials are injected into the container environment.
 
 Run it again whenever the AWS session expires.
@@ -139,7 +152,7 @@ Kong configuration is managed declaratively using decK.
 
 The synchronization process:
 
-1. Loads environment variables from `.config/local.env`
+1. Loads environment variables from `.config/<environment>.env`
 2. Validates Kong configuration
 3. Computes differences against the running Kong instance
 4. Applies configuration changes to Kong
@@ -147,7 +160,7 @@ The synchronization process:
 ```bash
 make sync
 
-#OR
+# OR
 
 ENVIRONMENT=dev make sync
 ```
@@ -185,7 +198,7 @@ Export current Kong state:
 
 ```bash
 deck \
-  --config .config/local.deck.yml \
+  --config .config/<environment>.deck.yml \
   gateway dump
 ```
 
@@ -193,7 +206,7 @@ Preview planned changes without applying them:
 
 ```bash
 deck \
-  --config .config/local.deck.yml \
+  --config .config/<environment>.deck.yml \
   gateway diff \
   services
 ```
@@ -321,7 +334,7 @@ Kong can no longer invoke Lambda functions.
 Re-export AWS credentials and restart Kong:
 
 ```bash
-./scripts/start-kong.sh
+make init
 ```
 
 If the AWS login session has also expired:
@@ -329,7 +342,7 @@ If the AWS login session has also expired:
 ```bash
 aws login --profile cloud-automation-dev
 
-./scripts/start-kong.sh
+make init
 ```
 
 ---
@@ -362,12 +375,7 @@ Verify:
 - API Gateway resource path
 - API Gateway deployment status
 
-API-specific requirements are documented in:
-
-```text
-services/cmdb-api.yml
-services/directory-api.yml
-```
+API-specific requirements are documented in `services/*-api.yml`
 
 ---
 
@@ -536,4 +544,5 @@ before invoking the Lambda function.
 - Local Kong uses PostgreSQL, matching the production architecture.
 - API Gateway-backed services and direct Lambda-backed services can coexist within the same Kong instance.
 - API Gateway resource policy requirements are documented in the corresponding service definition files.
-- AWS credentials used by the aws-lambda plugin are exported when Kong starts via `./scripts/start-kong.sh`.
+- AWS credentials used by the aws-lambda plugin are exported during `make init`.
+- Additional documentation is available under `tests/`, `tests/framework/`, and `localstack/`.
