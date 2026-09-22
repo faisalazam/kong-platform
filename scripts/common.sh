@@ -15,10 +15,11 @@ error() { echo "[ERROR] $*" >&2; }
 wait_for_http_endpoint() {
   local name="$1"
   local url="$2"
+  local retries="${3:-$RETRIES}"
 
   log "Waiting for ${name}..."
 
-  for ((i=1; i<=RETRIES; i++)); do
+  for ((i=1; i<=retries; i++)); do
 
     status="$(
       curl \
@@ -35,11 +36,11 @@ wait_for_http_endpoint() {
       return 0
     fi
 
-    warn "Attempt ${i}/${RETRIES} returned HTTP ${status}, retrying in ${RETRY_DELAY}s..."
+    warn "Attempt ${i}/${retries} returned HTTP ${status}, retrying in ${RETRY_DELAY}s..."
 
     sleep "${RETRY_DELAY}"
   done
 
-  error "${name} did not become ready after ${RETRIES} attempts"
+  error "${name} did not become ready after ${retries} attempts"
   exit 1
 }

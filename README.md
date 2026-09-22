@@ -347,6 +347,43 @@ make init
 
 ---
 
+### LocalStack May Log ResourceConflictException During Startup
+
+**Symptoms**
+
+```text
+AWS lambda.Invoke => 409 (ResourceConflictException)
+Lambda functions are created and updated asynchronously in the new lambda provider like in AWS.
+Before invoking <function_name>, please wait until the function transitioned from the state 
+Pending to Active using: 
+"awslocal lambda wait function-active-v2 --function-name <function_name>" 
+Check out https://docs.localstack.cloud/user-guide/aws/lambda/#function-in-pending-state
+```
+
+**Cause**
+
+LocalStack creates and updates Lambda functions asynchronously.
+
+During startup, readiness checks may attempt to invoke a function before it transitions from `Pending` to `Active`.
+
+**Notes**
+
+The local environment intentionally waits for a successful request through the Kong proxy rather than relying solely on
+Lambda state. A Lambda can be active while Kong proxy workers are still applying configuration synchronized through
+decK.
+
+For this reason, a successful proxy request is used as the readiness signal for automated tests instead of below:
+
+```bash
+godotenv -o -f .config/local.env \
+aws \
+  --endpoint-url=http://localhost:4566 \
+  lambda wait function-active-v2 \
+  --function-name <function_name>
+```
+
+---
+
 ### API Gateway Returns "Missing Authentication Token"
 
 **Symptoms**

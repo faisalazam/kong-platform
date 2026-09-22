@@ -77,30 +77,58 @@ if [ "${SYNC_CONFIG}" = "true" ]; then
     "${sync_sources[@]}"
 
   if [ "$ENVIRONMENT" = "local" ]; then
-    # Wait until the Kong proxy has observed the configuration
-    # synchronized through the Admin API.
+    # Wait until the Kong proxy has observed the configuration synchronized through the Admin API.
     #
     # Route visibility via:
     #
     #   http://localhost:8001/routes
     #
-    # is not sufficient because proxy workers may still be
-    # propagating the updated configuration.
+    # is not sufficient because proxy workers may still be propagating the updated configuration.
     #
     # A successful request through the proxy proves that:
     #
     #   - routes are available
     #   - services are available
     #   - plugins are active
-    #   - proxy workers have applied the configuration
+    #   - proxy workers have applied configuration
+    #   - LocalStack is reachable
+    #   - the target Lambda function is active and invokable
     #
-    # Without this check, API requests and automated tests may
-    # intermittently fail immediately after a successful decK sync,
-    # even though the routes are already visible through the
-    # Admin API.
+    # During development I investigated replacing this readiness check with:
+    #
+    #   aws lambda wait function-active-v2
+    #
+    # because LocalStack occasionally logs:
+    #
+    #   AWS lambda.Invoke => 409 (ResourceConflictException)
+    #
+    # and recommends waiting for Lambda functions to transition from Pending to Active.
+    #
+    # However, Lambda readiness alone proved insufficient. Tests executed immediately after a successful
+    # function-active-v2 wait still intermittently failed with:
+    #
+    #   404 no Route matched with those values
+    #
+    # demonstrating that Kong proxy workers had not yet applied the configuration synchronized through decK.
+    #
+    # A successful request through the proxy therefore acts as a stronger end-to-end readiness signal than either:
+    #
+    #   - route visibility via the Admin API
+    #   - Lambda Active state via function-active-v2
+    #
+    # Without this check, API requests and automated tests may intermittently fail immediately after a successful decK
+    # sync, even though both:
+    #
+    #   - routes are visible through the Admin API
+    #   - Lambda functions report an Active state
+    #
+    # See also:
+    #
+    #   https://docs.localstack.cloud/aws/services/lambda/#function-in-pending-state
     wait_for_http_endpoint \
       "Kong Proxy Configuration" \
-      "http://localhost:8000/poc/localstack/test"
+      "http://localhost:8000/poc/localstack/test" \
+      60
   fi
 
   log "SUCCESS: Kong configuration synchronized"
