@@ -14,30 +14,35 @@ assert_response() {
     "$status" \
     "event dump"
 
-  assert_jq_expr \
+  assert_jq_eq \
     "$body" \
-    '.statusCode == 200' \
-    "lambda response status"
+    '.statusCode' \
+    '200' \
+    'lambda response status'
 
-  assert_jq_expr \
+  assert_jq_type \
     "$body" \
-    '.body | fromjson | .requestContext != null' \
-    "requestContext present"
+    '.body | fromjson | .requestContext' \
+    'object' \
+    'requestContext present'
 
-  assert_jq_expr \
+  assert_jq_type \
     "$body" \
-    '.body | fromjson | .headers != null' \
-    "headers present"
+    '.body | fromjson | .headers' \
+    'object' \
+    'headers present'
 
-  assert_jq_expr \
+  assert_jq_eq \
     "$body" \
-    '.body | fromjson | .httpMethod == "GET"' \
-    "http method"
+    '.body | fromjson | .httpMethod' \
+    '"GET"' \
+    'http method'
 
-  assert_jq_expr \
+  assert_jq_type \
     "$body" \
-    '.body | fromjson | .path != null' \
-    "path present"
+    '.body | fromjson | .path' \
+    'string' \
+    'path present'
 }
 
 execute_test_case \

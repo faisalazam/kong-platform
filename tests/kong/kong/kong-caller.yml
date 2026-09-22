@@ -1,0 +1,64 @@
+_format_version: "3.0"
+
+# Test scenario:
+#
+#   Client
+#     ↓
+#   Kong
+#     ↓
+#   kong-caller Lambda
+#     ↓
+#   Kong
+#     ↓
+#   localstack-smoke-test Lambda
+#
+# This validates that a Lambda function can act as a Kong client and
+# successfully invoke another Kong-managed endpoint.
+#
+# Validate via:
+#
+#   curl -i http://localhost:8000/poc/kong/caller
+#
+services:
+  - name: kong-caller
+
+    # Dummy upstream.
+    # The aws-lambda plugin performs the invocation.
+    url: http://localhost:65535
+
+    routes:
+      - name: kong-caller-route
+
+        paths:
+          - /poc/kong
+
+        methods:
+          - GET
+
+        strip_path: true
+
+    plugins:
+      - name: aws-lambda
+
+        enabled: true
+
+        config:
+          function_name: kong-caller
+
+          aws_region: ap-southeast-2
+
+          host: localstack
+          port: 4566
+
+          disable_https: true
+
+          awsgateway_compatible: true
+
+          invocation_type: RequestResponse
+
+          is_proxy_integration: true
+
+          forward_request_uri: true
+          forward_request_body: true
+          forward_request_method: true
+          forward_request_headers: true

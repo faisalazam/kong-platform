@@ -14,10 +14,11 @@ assert_response() {
     "$status" \
     "echo-path"
 
-  assert_jq_expr \
+  assert_jq_eq \
     "$body" \
-    '.body | fromjson | .path == "/ad/groups"' \
-    "strip_path validation"
+    '.body | fromjson | .path' \
+    '"/ad/groups"' \
+    'strip_path validation'
 }
 
 execute_test_case \

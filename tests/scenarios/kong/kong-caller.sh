@@ -12,16 +12,22 @@ assert_response() {
   assert_status \
     200 \
     "$status" \
-    "localstack smoke test"
+    "kong caller"
 
-  assert_jq_expr \
+  assert_jq_eq \
     "$body" \
-    '.body | contains("hello from localstack")' \
-    '"hello from localstack"' \
-    'localstack smoke test response'
+    '.status' \
+    '200' \
+    'nested lambda response status'
+
+  assert_jq_type \
+    "$body" \
+    '.response' \
+    'string' \
+    'nested lambda response body'
 }
 
 execute_test_case \
   method=GET \
-  path="/poc/localstack/test" \
+  path="/poc/kong/caller" \
   assert=assert_response

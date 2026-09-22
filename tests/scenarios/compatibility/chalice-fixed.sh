@@ -14,15 +14,16 @@ assert_response() {
     "$status" \
     "chalice fixed"
 
-  assert_jq_expr \
+  assert_jq_type \
     "$body" \
-    '.body | fromjson | .resource != null' \
-    "resource normalization"
+    '.body | fromjson | .resource' \
+    'string' \
+    'resource normalization'
 
-  assert_jq_expr \
+  assert_jq_nullish \
     "$body" \
-    '.body | fromjson | .stageVariables == null' \
-    "stageVariables normalization"
+    '.body | fromjson | .stageVariables' \
+    'stageVariables normalization'
 }
 
 execute_test_case \
