@@ -347,6 +347,65 @@ make init
 
 ---
 
+### Real AWS Lambda Invocation Fails While Running LocalStack Environment
+
+**Symptoms**
+
+```text
+HTTP/1.1 500 Internal Server Error
+```
+
+or:
+
+```json
+{
+  "message": "An unexpected error occurred"
+}
+```
+
+when invoking a Lambda-backed route such as:
+
+```text
+/poc/lambda/cmdb/*
+/poc/lambda/directory/*
+/poc/lambda/sandpit-management/*
+```
+
+**Cause**
+
+Kong was started using LocalStack credentials:
+
+```bash
+make down up
+```
+
+but the configured Lambda ARN points to a real AWS Lambda function.
+
+The `aws-lambda` plugin attempts to invoke the real AWS Lambda using LocalStack credentials, causing the invocation to
+fail.
+
+**Resolution**
+
+Reinitialize Kong using AWS credentials:
+
+```bash
+ENVIRONMENT=dev make init
+```
+
+or recreate the environment:
+
+```bash
+ENVIRONMENT=dev make down up
+```
+
+**Notes**
+
+Use the local environment when invoking LocalStack Lambda functions.
+
+Use the dev environment when invoking real AWS Lambda functions.
+
+---
+
 ### LocalStack May Log ResourceConflictException During Startup
 
 **Symptoms**
