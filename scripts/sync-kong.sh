@@ -125,10 +125,25 @@ if [ "${SYNC_CONFIG}" = "true" ]; then
     # See also:
     #
     #   https://docs.localstack.cloud/aws/services/lambda/#function-in-pending-state
-    wait_for_http_endpoint \
+    if ! wait_for_http_endpoint \
       "Kong Proxy Configuration" \
       "http://localhost:8000/poc/localstack/test" \
-      60
+      90; then
+
+      cat >&2 <<EOF
+
+Suggested recovery:
+
+  make down up
+
+Kong, LocalStack or Lambda startup may not have completed successfully.
+Recreating the environment is usually faster than investigating a one-off
+startup timing issue.
+
+EOF
+
+      exit 1
+    fi
   fi
 
   log "SUCCESS: Kong configuration synchronized"

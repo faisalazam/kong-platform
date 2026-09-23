@@ -51,12 +51,19 @@ elif [ "${AWS_MODE}" = "localstack" ]; then
 
   log "Using LocalStack credentials"
 
+  warn "Kong is configured to invoke LocalStack Lambda functions only."
+  warn "To invoke real AWS Lambda functions, run:"
+  warn "  ENVIRONMENT=dev make down up"
+  warn "or"
+  warn "  ENVIRONMENT=dev make init"
+
 else
   error "Unsupported AWS_MODE: ${AWS_MODE}"
   exit 1
 fi
 
-wait_for_http_endpoint \
+if ! wait_for_http_endpoint \
   "Kong Admin API" \
-  "http://localhost:8001/status"
-
+  "http://localhost:8001/status"; then
+  exit 1
+fi

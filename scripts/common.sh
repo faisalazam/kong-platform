@@ -42,5 +42,5 @@ wait_for_http_endpoint() {
   done
 
   error "${name} did not become ready after ${retries} attempts"
-  exit 1
+  return 1
 }
