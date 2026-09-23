@@ -38,6 +38,9 @@ _format_version: "3.0"
 # 4. Validate end-to-end connectivity through Kong:
 #    curl -i 'http://localhost:8000/poc/api-gateway/directory/ad/groups?domain=TPGT'
 #
+# 5. Real curl:
+#    curl -i 'https://api.dev.directory-api.cloud-automation.nonp.cloud-automation.c1.tpgtelecom.com.au/ad/groups?domain=TPGT'
+#
 # This configuration demonstrates:
 #   Kong → API Gateway → Directory API Lambda
 services:
